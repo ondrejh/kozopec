@@ -33,6 +33,59 @@
 
 #define BUTTON BIT3
 
+#define LEDS_INIT() do{P2DIR|=0x37;P2OUT&=~0x37;P1DIR|=0x30;P1OUT&=~0x30;}while(0)
+#define LED1_ON() do{P2OUT|=0x02;}while(0)
+#define LED1_OFF() do{P2OUT&=~0x02;}while(0)
+#define LED1_SWAP() do{P2OUT^=0x02;}while(0)
+#define LED2_ON() do{P2OUT|=0x01;}while(0)
+#define LED2_OFF() do{P2OUT&=~0x01;}while(0)
+#define LED2_SWAP() do{P2OUT^=0x01;}while(0)
+#define LED3_ON() do{P1OUT|=0x20;}while(0)
+#define LED3_OFF() do{P1OUT&=~0x20;}while(0)
+#define LED3_SWAP() do{P1OUT^=0x20;}while(0)
+#define LED4_ON() do{P1OUT|=0x10;}while(0)
+#define LED4_OFF() do{P1OUT&=~0x10;}while(0)
+#define LED4_SWAP() do{P1OUT^=0x10;}while(0)
+#define LED5_ON() do{P2OUT|=0x04;}while(0)
+#define LED5_OFF() do{P2OUT&=~0x04;}while(0)
+#define LED5_SWAP() do{P2OUT^=0x04;}while(0)
+#define LED6_ON() do{P2OUT|=0x20;}while(0)
+#define LED6_OFF() do{P2OUT&=~0x20;}while(0)
+#define LED6_SWAP() do{P2OUT^=0x20;}while(0)
+#define LED7_ON() do{P2OUT|=0x10;}while(0)
+#define LED7_OFF() do{P2OUT&=~0x10;}while(0)
+#define LED7_SWAP() do{P2OUT^=0x10;}while(0)
+
+void swapone(unsigned char which)
+{
+    switch (which)
+    {
+        case 1:
+            LED1_SWAP();
+            break;
+        case 2:
+            LED2_SWAP();
+            break;
+        case 3:
+            LED3_SWAP();
+            break;
+        case 4:
+            LED4_SWAP();
+            break;
+        case 5:
+            LED5_SWAP();
+            break;
+        case 6:
+            LED6_SWAP();
+            break;
+        case 7:
+            LED7_SWAP();
+            break;
+        default:
+            break;
+    }
+}
+
 // init rtc timer (32kHz Xtal)
 void rtc_timer_init(void)
 {
@@ -58,6 +111,7 @@ void board_init(void)
     P1DIR&=~BUTTON; P1IE|=BUTTON; P1IES|=BUTTON; P1IFG&=~BUTTON; P1REN|=BUTTON;
 
 	LED_INIT(); // leds
+	LEDS_INIT();
 }
 
 // main program body
@@ -82,7 +136,10 @@ int main(void)
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void Timer_A (void)
 {
-    LED_GREEN_SWAP();
+    //LED_GREEN_SWAP();
+    static unsigned char which = 1;
+    swapone(which++);
+    if (which>7) which=1;
 }
 
 // Port 1 interrupt service routine
@@ -93,6 +150,7 @@ __interrupt void Port_1(void)
     if (P1IFG&BUTTON)
     {
         P1IFG &= ~BUTTON; // P1.3 IFG cleared
-        LED_RED_SWAP();
+        //LED_RED_SWAP();
+        LED1_SWAP();
     }
 }
