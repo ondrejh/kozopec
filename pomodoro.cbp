@@ -25,39 +25,9 @@
 		</Compiler>
 		<Unit filename="Makefile" />
 		<Unit filename="README.md" />
-		<Unit filename="comm.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="comm.h" />
-		<Unit filename="crc8.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="crc8.h" />
-		<Unit filename="dcf77.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="dcf77.h" />
-		<Unit filename="ds18b20.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="ds18b20.h" />
-		<Unit filename="globvar.h" />
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="pout.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="pout.h" />
-		<Unit filename="remflash.sh" />
-		<Unit filename="rtc.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="rtc.h" />
-		<Unit filename="uart.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="uart.h" />
 		<Extensions>
 			<code_completion />
 			<debugger />
