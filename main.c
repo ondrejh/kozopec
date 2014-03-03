@@ -14,7 +14,13 @@
 //          --|RST              |
 //            |             P1.3|<---- BUTTON
 //            |                 |
-//            |             P1.0|----> LED
+//            |             P2.1|----> LED1
+//            |             P2.0|----> LED2
+//            |             P1.5|----> LED3
+//            |             P1.4|----> LED4
+//            |             P1.3|----> LED5
+//            |             P2.5|----> LED6
+//            |             P2.4|----> LED7
 //            |                 |
 //
 //******************************************************************************
@@ -56,7 +62,51 @@
 #define LED7_OFF() do{P2OUT&=~0x10;}while(0)
 #define LED7_SWAP() do{P2OUT^=0x10;}while(0)
 
-void swapone(unsigned char which)
+#define LEDS_NUM 7
+
+#define RTC_SAMPLING_FREQV 512
+
+unsigned char leds[LEDS_NUM] = {0,0,0,0,0,0,0};
+
+void setonepwm(unsigned char which, unsigned char how)
+{
+    if ((which>0)&&(which<=LEDS_NUM))
+    {
+        leds[which]=how;
+    }
+}
+
+void setoneonoff(unsigned char which, unsigned char how)
+{
+    if (how!=0)
+    {
+        switch(which)
+        {
+            case 0: LED1_ON();  break;
+            case 1: LED2_ON();  break;
+            case 2: LED3_ON();  break;
+            case 3: LED4_ON();  break;
+            case 4: LED5_ON();  break;
+            case 5: LED6_ON();  break;
+            case 6: LED7_ON();  break;
+        }
+    }
+    else
+    {
+        switch(which)
+        {
+            case 0: LED1_OFF(); break;
+            case 1: LED2_OFF(); break;
+            case 2: LED3_OFF(); break;
+            case 3: LED4_OFF(); break;
+            case 4: LED5_OFF(); break;
+            case 5: LED6_OFF(); break;
+            case 6: LED7_OFF(); break;
+        }
+    }
+}
+
+/*void swapone(unsigned char which)
 {
     switch (which)
     {
@@ -84,7 +134,7 @@ void swapone(unsigned char which)
         default:
             break;
     }
-}
+}*/
 
 // init rtc timer (32kHz Xtal)
 void rtc_timer_init(void)
@@ -136,10 +186,27 @@ int main(void)
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void Timer_A (void)
 {
-    //LED_GREEN_SWAP();
-    static unsigned char which = 1;
-    swapone(which++);
-    if (which>7) which=1;
+    static unsigned char rtc_div = 0;
+
+    unsigned char i;
+
+    // every 1/8s
+    if ((rtc_div&0x3F)==0)
+    {
+        static unsigned char which = 0;
+        setonepwm(which++,16);
+        if (which==LEDS_NUM) which=0;
+    }
+
+    // dimming and pwm output
+    for (i=0;i<LEDS_NUM;i++)
+    {
+        setoneonoff(i,(leds[i]>(rtc_div&0x0F))?1:0);
+        if (leds[i]>0) leds[i]--;
+    }
+
+    // increase time divider
+    rtc_div++;
 }
 
 // Port 1 interrupt service routine
