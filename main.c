@@ -64,13 +64,13 @@
 
 #define LEDS_NUM 7
 
-#define RTC_SAMPLING_FREQV 512
+#define RTC_SAMPLING_FREQV 1024
 
 unsigned char leds[LEDS_NUM] = {0,0,0,0,0,0,0};
 
 void setonepwm(unsigned char which, unsigned char how)
 {
-    if ((which>0)&&(which<=LEDS_NUM))
+    if ((which>=0)&&(which<LEDS_NUM))
     {
         leds[which]=how;
     }
@@ -194,15 +194,49 @@ __interrupt void Timer_A (void)
     if ((rtc_div&0x3F)==0)
     {
         static unsigned char which = 0;
-        setonepwm(which++,16);
-        if (which==LEDS_NUM) which=0;
+        static unsigned char status = 0;
+        switch (status)
+        {
+            case 0:
+                setonepwm(which++,16);
+                if (which==LEDS_NUM) status++;
+                break;
+            case 1:
+                if (leds[LEDS_NUM-1]==0)
+                {
+                    which=LEDS_NUM-1;
+                    status++;
+                }
+                break;
+            case 2:
+                setonepwm(which--,16);
+                if (which==0xFF) status++;
+                break;
+            case 3:
+                if (leds[0]==0)
+                {
+                    which=0;
+                    status=0;
+                }
+                break;
+            default:
+                which=0;
+                status=0;
+                break;
+        }
+        //setonepwm(which++,16);
+        //if (which==LEDS_NUM) which=0;
     }
 
     // dimming and pwm output
     for (i=0;i<LEDS_NUM;i++)
     {
         setoneonoff(i,(leds[i]>(rtc_div&0x0F))?1:0);
-        if (leds[i]>0) leds[i]--;
+    }
+
+    if ((rtc_div&0x0F)==0)
+    {
+        for (i=0;i<LEDS_NUM;i++) if (leds[i]>0) leds[i]--;
     }
 
     // increase time divider
@@ -218,6 +252,6 @@ __interrupt void Port_1(void)
     {
         P1IFG &= ~BUTTON; // P1.3 IFG cleared
         //LED_RED_SWAP();
-        LED1_SWAP();
+        //LED1_SWAP();
     }
 }
