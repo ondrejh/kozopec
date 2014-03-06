@@ -66,7 +66,14 @@
 
 #define RTC_SAMPLING_FREQV 1024
 
-unsigned char leds[LEDS_NUM] = {0,0,0,0,0,0,0};
+#define TOTAL_TICKS_25M 6000
+#define TOTAL_TICKS_5M 1200
+//test
+//#define TOTAL_TICKS_25M 300
+//#define TOTAL_TICKS_5M 120
+
+volatile unsigned int leds[LEDS_NUM] = {0,0,0,0,0,0,0};
+unsigned int pleds[LEDS_NUM] = {0,0,0,0,0,0,0};
 
 void setonepwm(unsigned char which, unsigned char how)
 {
@@ -106,37 +113,6 @@ void setoneonoff(unsigned char which, unsigned char how)
     }
 }
 
-/*void swapone(unsigned char which)
-{
-    switch (which)
-    {
-        case 1:
-            LED1_SWAP();
-            break;
-        case 2:
-            LED2_SWAP();
-            break;
-        case 3:
-            LED3_SWAP();
-            break;
-        case 4:
-            LED4_SWAP();
-            break;
-        case 5:
-            LED5_SWAP();
-            break;
-        case 6:
-            LED6_SWAP();
-            break;
-        case 7:
-            LED7_SWAP();
-            break;
-        default:
-            break;
-    }
-}*/
-
-// init rtc timer (32kHz Xtal)
 void rtc_timer_init(void)
 {
 	CCTL0 = CCIE; // CCR0 interrupt enabled
@@ -164,6 +140,9 @@ void board_init(void)
 	LEDS_INIT();
 }
 
+#define SEQV_25M 10
+#define SEQV_5M 20
+
 // main program body
 int main(void)
 {
@@ -172,9 +151,62 @@ int main(void)
 	board_init(); // init dco and leds
 	rtc_timer_init(); // init 32kHz clock timer
 
+    int seqv = SEQV_25M; // sequential pointer
+    unsigned int tcnt=0; // timer counter
+    int ptr=0; // led pointer
+
+    int i;
+
 	while(1)
 	{
-        __bis_SR_register(CPUOFF + GIE); // enter sleep mode (leave on rtc second event)
+        __bis_SR_register(CPUOFF + GIE); // enter sleep mode
+        // it weaks 4times per second by rtc timer
+        switch (seqv)
+        {
+            case SEQV_25M: // init 25min timer
+                tcnt=0;
+                for (i=0;i<LEDS_NUM;i++) leds[i]=0;
+                ptr=0;
+                leds[ptr]=0x10;
+                seqv++;
+                break;
+            case (SEQV_25M+1): // 25min ticking
+                if ((tcnt&0x07)==0) leds[ptr]=0x10;
+                else if ((tcnt&0x07)==3)
+                {
+                    if (tcnt>=((TOTAL_TICKS_25M/LEDS_NUM)*(ptr+1))) ptr++;
+                    if (ptr>=LEDS_NUM) seqv++;
+                    else leds[ptr]=0x00;
+                }
+                break;
+            case (SEQV_25M+2): // 25m passed
+                seqv=SEQV_5M;
+                break;
+
+            case SEQV_5M: // init 5min timer
+                tcnt=0;
+                for (i=0;i<LEDS_NUM;i++) leds[i]=0x10;
+                ptr=0;
+                leds[ptr]=0;
+                seqv++;
+                break;
+            case (SEQV_5M+1): // 5min ticking
+                if ((tcnt&0x03)==0) leds[ptr]=0;
+                else if ((tcnt&0x03)==2)
+                {
+                    if (tcnt>=((TOTAL_TICKS_5M/LEDS_NUM)*(ptr+1))) ptr++;
+                    if (ptr>=LEDS_NUM) seqv++;
+                    else leds[ptr]=0x10;
+                }
+                break;
+            case (SEQV_5M+2): // 5min passed
+                seqv=SEQV_25M;
+                break;
+
+            default:
+                break;
+        }
+        tcnt++;
 	}
 
 	return -1;
@@ -190,53 +222,22 @@ __interrupt void Timer_A (void)
 
     unsigned char i;
 
-    // every 1/8s
-    if ((rtc_div&0x3F)==0)
-    {
-        static unsigned char which = 0;
-        static unsigned char status = 0;
-        switch (status)
-        {
-            case 0:
-                setonepwm(which++,16);
-                if (which==LEDS_NUM) status++;
-                break;
-            case 1:
-                if (leds[LEDS_NUM-1]==0)
-                {
-                    which=LEDS_NUM-1;
-                    status++;
-                }
-                break;
-            case 2:
-                setonepwm(which--,16);
-                if (which==0xFF) status++;
-                break;
-            case 3:
-                if (leds[0]==0)
-                {
-                    which=0;
-                    status=0;
-                }
-                break;
-            default:
-                which=0;
-                status=0;
-                break;
-        }
-        //setonepwm(which++,16);
-        //if (which==LEDS_NUM) which=0;
-    }
+    // every 1/4s leave powersave
+    if (rtc_div==0) __bic_SR_register_on_exit(CPUOFF);  // Clear CPUOFF bit from 0(SR)
 
     // dimming and pwm output
     for (i=0;i<LEDS_NUM;i++)
     {
-        setoneonoff(i,(leds[i]>(rtc_div&0x0F))?1:0);
+        setoneonoff(i,(pleds[i]>(rtc_div&0x0F))?1:0);
     }
 
     if ((rtc_div&0x0F)==0)
     {
-        for (i=0;i<LEDS_NUM;i++) if (leds[i]>0) leds[i]--;
+        for (i=0;i<LEDS_NUM;i++)
+        {
+            if (pleds[i]>leds[i]) pleds[i]--;
+            if (pleds[i]<leds[i]) pleds[i]++;
+        }
     }
 
     // increase time divider
