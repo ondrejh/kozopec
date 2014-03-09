@@ -38,6 +38,7 @@
 #define LED_GREEN_SWAP() {P1OUT^=0x40;}
 
 #define BUTTON BIT3
+#define BTN_DOWN ((P1IN&BIT3)==0)
 
 #define LEDS_INIT() do{P2DIR|=0x37;P2OUT&=~0x37;P1DIR|=0x30;P1OUT&=~0x30;}while(0)
 #define LED1_ON() do{P2OUT|=0x02;}while(0)
@@ -134,12 +135,13 @@ void board_init(void)
 	DCOCTL = CALDCO_1MHZ;
 
     // button P1.3
-    P1DIR&=~BUTTON; P1IE|=BUTTON; P1IES|=BUTTON; P1IFG&=~BUTTON; P1REN|=BUTTON;
+    P1DIR&=~BUTTON; /*P1IE|=BUTTON; P1IES|=BUTTON; P1IFG&=~BUTTON;*/ P1REN|=BUTTON;
 
 	LED_INIT(); // leds
 	LEDS_INIT();
 }
 
+#define SEQV_RESET 0
 #define SEQV_25M 10
 #define SEQV_5M 20
 
@@ -151,7 +153,7 @@ int main(void)
 	board_init(); // init dco and leds
 	rtc_timer_init(); // init 32kHz clock timer
 
-    int seqv = SEQV_25M; // sequential pointer
+    int seqv = SEQV_RESET; // sequential pointer
     unsigned int tcnt=0; // timer counter
     int ptr=0; // led pointer
 
@@ -163,6 +165,21 @@ int main(void)
         // it weaks 4times per second by rtc timer
         switch (seqv)
         {
+            case SEQV_RESET:
+                for (i=0;i<LEDS_NUM;i++) leds[i]=0;
+                seqv++;
+                break;
+            case (SEQV_RESET+1): // wait button
+                if (BTN_DOWN)
+                {
+                    for (i=0;i<LEDS_NUM;i++) leds[i]=0x10;
+                    seqv++;
+                }
+                break;
+            case (SEQV_RESET+2):
+                if (!BTN_DOWN) seqv=SEQV_25M;
+                break;
+
             case SEQV_25M: // init 25min timer
                 tcnt=0;
                 for (i=0;i<LEDS_NUM;i++) leds[i]=0;
@@ -178,9 +195,17 @@ int main(void)
                     if (ptr>=LEDS_NUM) seqv++;
                     else leds[ptr]=0x00;
                 }
+                if (BTN_DOWN)
+                {
+                    for (i=0;i<LEDS_NUM;i++) leds[i]=0x10;
+                    seqv+=2;
+                }
                 break;
             case (SEQV_25M+2): // 25m passed
-                seqv=SEQV_5M;
+                if (BTN_DOWN) seqv++;
+                break;
+            case (SEQV_25M+3):
+                if (!BTN_DOWN) seqv=SEQV_5M;
                 break;
 
             case SEQV_5M: // init 5min timer
@@ -198,12 +223,21 @@ int main(void)
                     if (ptr>=LEDS_NUM) seqv++;
                     else leds[ptr]=0x10;
                 }
+                if (BTN_DOWN)
+                {
+                    for (i=0;i<LEDS_NUM;i++) leds[i]=0x00;
+                    seqv+=2;
+                }
                 break;
-            case (SEQV_5M+2): // 5min passed
-                seqv=SEQV_25M;
+            case (SEQV_5M+2): // 25m passed
+                if (BTN_DOWN) seqv++;
+                break;
+            case (SEQV_5M+3):
+                if (!BTN_DOWN) seqv=SEQV_25M;
                 break;
 
             default:
+                seqv = SEQV_RESET;
                 break;
         }
         tcnt++;
@@ -242,17 +276,4 @@ __interrupt void Timer_A (void)
 
     // increase time divider
     rtc_div++;
-}
-
-// Port 1 interrupt service routine
-#pragma vector=PORT1_VECTOR
-__interrupt void Port_1(void)
-{
-    // button input
-    if (P1IFG&BUTTON)
-    {
-        P1IFG &= ~BUTTON; // P1.3 IFG cleared
-        //LED_RED_SWAP();
-        //LED1_SWAP();
-    }
 }
