@@ -26,7 +26,8 @@
 //******************************************************************************
 
 // include section
-#include <msp430g2553.h>
+//#include <msp430g2553.h>
+#include <msp430g2452.h>
 
 // board (leds)
 #define LED_INIT() {P1DIR|=0x41;P1OUT&=~0x41;}

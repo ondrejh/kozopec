@@ -9,8 +9,8 @@
 # The TXT file is used for BSL loading, the ELF can be used for JTAG use
 #
 TARGET     = msp430pomodoro
-MCU        = msp430g2553
-#MCU        = msp430g2452
+#MCU        = msp430g2553
+MCU        = msp430g2452
 # List all the source files here
 # eg if you have a source file foo.c then list it here
 SOURCES = main.c
@@ -43,7 +43,8 @@ DEPEND = $(SOURCES:.c=.d)
 # all the object files
 OBJECTS = $(SOURCES:.c=.o)
 Release: all
-all: $(TARGET).elf $(TARGET).hex $(TARGET).txt
+#all: $(TARGET).elf $(TARGET).hex $(TARGET).txt
+all: $(TARGET).hex
 $(TARGET).elf: $(OBJECTS)
 	echo "Linking $@"
 	$(CC) $(OBJECTS) $(LDFLAGS) $(LIBS) -o $@
@@ -86,4 +87,4 @@ program:
 	mspdebug rf2500 "prog $(TARGET).hex"
 
 program_win:
-	MSP430Flasher -i TIUSB -m SBW2 -g -n $(MCU) -e ERASE_ALL -w $(TARGET).hex -v -z [VCC]
+	MSP430Flasher -i TIUSB -m SBW2 -g -e ERASE_ALL -w $(TARGET).hex -v -z [VCC]
