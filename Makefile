@@ -8,7 +8,7 @@
 # $(TARGET).elf $(TARGET).hex and $(TARGET).txt nad $(TARGET).map are all generated.
 # The TXT file is used for BSL loading, the ELF can be used for JTAG use
 #
-TARGET     = msp430pomodoro
+TARGET     = msp430kozopec
 #MCU        = msp430g2553
 MCU        = msp430g2452
 # List all the source files here
