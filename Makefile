@@ -10,7 +10,8 @@
 #
 TARGET     = msp430kozopec
 #MCU        = msp430g2553
-MCU        = msp430g2452
+#MCU        = msp430g2452
+MCU        = msp430g2231
 # List all the source files here
 # eg if you have a source file foo.c then list it here
 SOURCES = main.c

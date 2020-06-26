@@ -24,8 +24,10 @@
 //******************************************************************************
 
 // include section
-#include <msp430g2553.h>
+//#include <msp430g2553.h>
 //#include <msp430g2452.h>
+#include <msp430g2231.h>
+
 #include <stdint.h>
 
 // on-board leds
@@ -61,7 +63,8 @@
 
 #define STEP_DIV 500 // 2000Hz / 1MHz
 #define STEP_OVF 1000
-#define STEP_ACC 2
+#define STEP_ACC 20
+#define SPEED_CNT_DIV 10
 
 // leds and dco init
 void board_init(void)
@@ -94,7 +97,7 @@ int main(void)
 
 	board_init(); // init hw
 
-	while(1)
+	while(1) // main loop
 	{
 	    // motor step control
 	    static uint16_t mt = 0;
@@ -116,7 +119,12 @@ int main(void)
                 mp = 0;
             }
             // speed control
-            mv += ma;
+            static int div = 0;
+            div ++;
+            if (div == SPEED_CNT_DIV) {
+                mv += ma;
+                div = 0;
+            }
 	    }
 
 	    // system sequential
