@@ -60,7 +60,7 @@
 #define MOTOR_ENABLED ((P1OUT&BIT0)==0)
 
 #define STEP_DIV 200 // 5000Hz / 1MHz
-#define STEP_OVF 1000
+#define STEP_OVF 1500
 #define STEP_ACC 5
 #define MAX_SPEED 500
 
@@ -83,6 +83,15 @@ void board_init(void)
 	// inputs
 	INPUT_INIT();
 
+	// analog input
+	P1DIR &= ~BIT5; P1SEL |= BIT5;
+	ADC10CTL1 = INCH_5 + ADC10DIV_3 ;         // Channel 3, ADC10CLK/3
+	ADC10CTL0 = SREF_0 + ADC10SHT_3 + ADC10ON;
+    //ADC10CTL0 = ADC10SHT_2 + ADC10ON; // ADC10ON, interrupt enabled
+    //ADC10CTL1 = INCH_5;               // input A5
+    ADC10AE0 |= BIT5;                 // PA.5 ADC option select
+    ADC10CTL0 |= ENC + ADC10SC;       // start conversion
+
 	// free running timer
 	TACCR0 = 0xFFFF;
 	TACTL = TASSEL_2 + MC_1; // SMCLK, upmode
@@ -97,15 +106,12 @@ int main(void)
 
 	while(1)
 	{
-	    /*if (RELEASE) MOTOR_DISABLE();
-	    else MOTOR_ENABLE();
-	    continue;*/
-
 	    // motor step control
 	    static uint16_t mt = 0;
 	    static uint16_t mp = 0; // step period
 	    static int16_t mv = 50; // step speed, if 0 stop
 	    static int16_t ma = 0;
+	    static int16_t max_speed = 200;
         if ((TAR - mt) > STEP_DIV) {
             if (mv!=0) {
                 mt += STEP_DIV;
@@ -123,11 +129,19 @@ int main(void)
             static int cnt = 0;
             if (cnt==10) {
                 mv += ma;
-                if (mv >= MAX_SPEED) mv = MAX_SPEED;
+                if (mv >= max_speed) mv = max_speed;
                 if (mv < 0) mv = 0;
                 cnt = 0;
             }
             cnt ++;
+
+            static int adc_cnt = 0;
+            if (adc_cnt >= 500) {
+                adc_cnt = 0;
+                max_speed = ADC10MEM + 200;
+                ADC10CTL0 |= ENC + ADC10SC;
+            }
+            adc_cnt++;
 	    }
 
 	    // system sequential
