@@ -44,27 +44,27 @@
 #define BUTTON ((P1IN&BIT3)==0)
 
 // inputs (button with pull-up, active low)
-#define INPUT_INIT() do{P1DIR|=0x1C;P1REN|=0x1C;}while(0)
+#define INPUT_INIT() do{P1DIR&=~0x1C;P1REN|=0x1C;}while(0)
 #define FORWARD ((P1IN&BIT3)==0)
 #define BACKWARD ((P1IN&BIT2)==0)
 #define RELEASE ((P1IN&BIT4)==0)
 
 // motor outputs (opto-coupled outputs, active low)
-#define MOTOR_INIT() do{P1DIR|0x01;P1OUT&=~0x01;P2DIR|=0x06;P2OUT&=~06;}while(0)
-#define MOTOR_DIR(x) do{(x)?(P2OUT|=0x02):(P2OUT&=~0x02);}while(0)
+#define MOTOR_INIT() do{P1DIR|=0x43;P1OUT&=~43;}while(0)
+#define MOTOR_DIR(x) do{(x)?(P1OUT|=BIT6):(P1OUT&=~BIT6);}while(0)
 #define FORW 0
 #define BACK 1
-#define DIR_FORW ((P2OUT&0x02)==0)
-#define DIR_BACK ((P2OUT&0x02)!=0)
-#define MOTOR_STEP() do{P2OUT^=0x04;}while(0)
-#define MOTOR_ENABLE() do{P1OUT|=0x01;}while(0)
-#define MOTOR_DISABLE() do{P1OUT&=~0x01;}while(0)
-#define MOTOR_ENABLED (P1OUT&0x01)
+#define DIR_FORW ((P1OUT&BIT6)!=0)
+#define DIR_BACK ((P1OUT&BIT6)==0)
+#define MOTOR_STEP() do{P1OUT^=BIT1;}while(0)
+#define MOTOR_ENABLE() do{P1OUT|=BIT0;}while(0)
+#define MOTOR_DISABLE() do{P1OUT&=~BIT0;}while(0)
+#define MOTOR_ENABLED ((P1OUT&BIT0)==0)
 
-#define STEP_DIV 500 // 2000Hz / 1MHz
-#define STEP_OVF 1000
-#define STEP_ACC 20
-#define SPEED_CNT_DIV 10
+#define STEP_DIV 200 // 5000Hz / 1MHz
+#define STEP_OVF 1500
+#define STEP_ACC 5
+#define MAX_SPEED 500
 
 // leds and dco init
 void board_init(void)
@@ -85,6 +85,15 @@ void board_init(void)
 	// inputs
 	INPUT_INIT();
 
+	// analog input
+	P1DIR &= ~BIT5; P1SEL |= BIT5;
+	ADC10CTL1 = INCH_5 + ADC10DIV_3 ;         // Channel 3, ADC10CLK/3
+	ADC10CTL0 = SREF_0 + ADC10SHT_3 + ADC10ON;
+    //ADC10CTL0 = ADC10SHT_2 + ADC10ON; // ADC10ON, interrupt enabled
+    //ADC10CTL1 = INCH_5;               // input A5
+    ADC10AE0 |= BIT5;                 // PA.5 ADC option select
+    ADC10CTL0 |= ENC + ADC10SC;       // start conversion
+
 	// free running timer
 	TACCR0 = 0xFFFF;
 	TACTL = TASSEL_2 + MC_1; // SMCLK, upmode
@@ -104,6 +113,7 @@ int main(void)
 	    static uint16_t mp = 0; // step period
 	    static int16_t mv = 50; // step speed, if 0 stop
 	    static int16_t ma = 0;
+	    static int16_t max_speed = 200;
         if ((TAR - mt) > STEP_DIV) {
             if (mv!=0) {
                 mt += STEP_DIV;
@@ -111,7 +121,6 @@ int main(void)
                 if (mp > STEP_OVF) {
                     mp -= STEP_OVF;
                     MOTOR_STEP();
-                    LED_GREEN_SWAP();
                 }
             }
             else {
@@ -119,12 +128,22 @@ int main(void)
                 mp = 0;
             }
             // speed control
-            static int div = 0;
-            div ++;
-            if (div == SPEED_CNT_DIV) {
+            static int cnt = 0;
+            if (cnt==10) {
                 mv += ma;
-                div = 0;
+                if (mv >= max_speed) mv = max_speed;
+                if (mv < 0) mv = 0;
+                cnt = 0;
             }
+            cnt ++;
+
+            static int adc_cnt = 0;
+            if (adc_cnt >= 500) {
+                adc_cnt = 0;
+                max_speed = ADC10MEM + 200;
+                ADC10CTL0 |= ENC + ADC10SC;
+            }
+            adc_cnt++;
 	    }
 
 	    // system sequential
@@ -132,37 +151,40 @@ int main(void)
         switch (seqv) {
         case 0: // wait button
             if (FORWARD) {
-                MOTOR_DIR(0);
-                MOTOR_ENABLE();
-                mv = 0;
-                ma = STEP_ACC;
-                seqv++;
-            }
-            else if (BACKWARD) {
                 MOTOR_DIR(1);
                 MOTOR_ENABLE();
                 mv = 0;
                 ma = STEP_ACC;
                 seqv++;
             }
-            else if (RELEASE && MOTOR_ENABLED)
-                MOTOR_DISABLE();
+            else if (BACKWARD) {
+                MOTOR_DIR(0);
+                MOTOR_ENABLE();
+                mv = 0;
+                ma = STEP_ACC;
+                seqv++;
+            }
+            else {
+                if (RELEASE)
+                    MOTOR_DISABLE();
+                else
+                    MOTOR_ENABLE();
+            }
             break;
         case 1: // acceleration (wait button release)
-            if (mv >= STEP_OVF)
-                mv = STEP_OVF-1;
             if ((DIR_FORW && (!FORWARD)) || (DIR_BACK && (!BACKWARD))) {
                 ma = -STEP_ACC;
                 seqv++;
             }
             break;
         case 2: // deceleration (wait button)
-            if ((DIR_FORW && FORWARD) || (DIR_BACK && (!BACKWARD))) {
+            if ((DIR_FORW &&  FORWARD) || (DIR_BACK && BACKWARD)) {
                 ma = STEP_ACC;
                 seqv--;
             }
             else if (mv <= 0) {
                 mv = 0;
+                ma = 0;
                 seqv = 0;
             }
             break;
