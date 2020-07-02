@@ -111,7 +111,7 @@ int main(void)
 	    // motor step control
 	    static uint16_t mt = 0;
 	    static uint16_t mp = 0; // step period
-	    static int16_t mv = 50; // step speed, if 0 stop
+	    static int16_t mv = 0; // step speed, if 0 stop
 	    static int16_t ma = 0;
 	    static int16_t max_speed = 200;
         if ((TAR - mt) > STEP_DIV) {
