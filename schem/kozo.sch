@@ -14,10 +14,10 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L MCU_Texas_MSP430:MSP430G2231IPW14 U2
+L MCU_Texas_MSP430:MSP430G2231IPW14 IC1
 U 1 1 5EFEB83B
 P 5000 4650
-F 0 "U2" H 5000 5631 50  0000 C CNN
+F 0 "IC1" H 5000 5631 50  0000 C CNN
 F 1 "MSP430G2231IPW14" H 5450 5400 50  0000 C CNN
 F 2 "Housings_SSOP:TSSOP-14_4.4x5mm_Pitch0.65mm" H 4300 4000 50  0001 C CIN
 F 3 "http://www.ti.com/lit/ds/symlink/msp430g2231.pdf" H 5000 4650 50  0001 C CNN
@@ -143,10 +143,10 @@ F 3 "" H 7600 5500 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Regulator_Linear:L78L33_SOT89 U1
+L Regulator_Linear:L78L33_SOT89 IC2
 U 1 1 5EFF363F
 P 3100 2100
-F 0 "U1" H 3100 2342 50  0000 C CNN
+F 0 "IC2" H 3100 2342 50  0000 C CNN
 F 1 "L78L33_SOT89" H 3100 2251 50  0000 C CNN
 F 2 "TO_SOT_Packages_SMD:SOT-89-3" H 3100 2300 50  0001 C CIN
 F 3 "http://www.st.com/content/ccc/resource/technical/document/datasheet/15/55/e5/aa/23/5b/43/fd/CD00000446.pdf/files/CD00000446.pdf/jcr:content/translations/en.CD00000446.pdf" H 3100 2050 50  0001 C CNN
@@ -360,10 +360,10 @@ Wire Wire Line
 Text Notes 8900 4800 0    63   ~ 0
 BACKWARD\nFORWARD\nRELEASE\nGND
 $Comp
-L Connector_Generic:Conn_01x04 J5
+L Connector_Generic:Conn_01x04 J2
 U 1 1 5F03D693
 P 8800 4650
-F 0 "J5" H 8718 4225 50  0000 C CNN
+F 0 "J2" H 8718 4225 50  0000 C CNN
 F 1 "Conn_01x04" H 8718 4316 50  0000 C CNN
 F 2 "PA357-381:PA357_381_04" H 8800 4650 50  0001 C CNN
 F 3 "~" H 8800 4650 50  0001 C CNN
@@ -371,10 +371,10 @@ F 3 "~" H 8800 4650 50  0001 C CNN
 	1    0    0    1   
 $EndComp
 $Comp
-L Connector_Generic:Conn_01x03 J4
+L Connector_Generic:Conn_01x03 J3
 U 1 1 5F03DE39
 P 8800 4050
-F 0 "J4" H 8880 4092 50  0000 L CNN
+F 0 "J3" H 8880 4092 50  0000 L CNN
 F 1 "Conn_01x03" H 8880 4001 50  0000 L CNN
 F 2 "Pin_Headers:Pin_Header_Straight_1x03_Pitch2.54mm" H 8800 4050 50  0001 C CNN
 F 3 "~" H 8800 4050 50  0001 C CNN
@@ -428,10 +428,10 @@ Wire Wire Line
 Wire Wire Line
 	6550 3750 6550 3850
 $Comp
-L Connector_Generic:Conn_01x06 J3
+L Connector_Generic:Conn_01x06 J4
 U 1 1 5F057126
 P 8800 3450
-F 0 "J3" H 8718 2925 50  0000 C CNN
+F 0 "J4" H 8718 2925 50  0000 C CNN
 F 1 "Conn_01x06" H 8718 3016 50  0000 C CNN
 F 2 "PA257-508:PA257_508_06" H 8800 3450 50  0001 C CNN
 F 3 "~" H 8800 3450 50  0001 C CNN
@@ -461,10 +461,10 @@ Connection ~ 8500 3550
 Wire Wire Line
 	8500 3550 8500 3950
 $Comp
-L Connector_Generic:Conn_01x03 J2
+L Connector_Generic:Conn_01x03 X1
 U 1 1 5F060DB8
 P 6050 3450
-F 0 "J2" V 6014 3262 50  0000 R CNN
+F 0 "X1" V 6014 3262 50  0000 R CNN
 F 1 "Conn_01x03" V 5923 3262 50  0000 R CNN
 F 2 "Pin_Headers:Pin_Header_Straight_1x03_Pitch2.54mm" H 6050 3450 50  0001 C CNN
 F 3 "~" H 6050 3450 50  0001 C CNN
