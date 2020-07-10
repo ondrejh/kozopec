@@ -1,7 +1,7 @@
 (export (version D)
   (design
     (source D:\Projekty\_FRIDAYS_\kozopec\schem\kozo.sch)
-    (date "10.7.2020 10:08:14")
+    (date "10.7.2020 10:20:25")
     (tool "Eeschema (5.1.5)-3")
     (sheet (number 1) (name /) (tstamps /)
       (title_block
@@ -149,7 +149,7 @@
       (sheetpath (names /) (tstamps /))
       (tstamp 5F0704FE))
     (comp (ref D1)
-      (value UniTSV)
+      (value SMAJ33A)
       (footprint Diodes_SMD:D_SMA)
       (libsource (lib my_device) (part UniTSV) (description ""))
       (sheetpath (names /) (tstamps /))
