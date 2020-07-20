@@ -47,7 +47,7 @@
 #define INPUT_INIT() do{P1DIR&=~0x1C;P1REN|=0x1C;}while(0)
 #define FORWARD ((P1IN&BIT3)==0)
 #define BACKWARD ((P1IN&BIT2)==0)
-#define RELEASE ((P1IN&BIT4)==0)
+#define RELEASE ((P1IN&BIT4)!=0)
 
 // motor outputs (opto-coupled outputs, active low)
 #define MOTOR_INIT() do{P1DIR|=0x43;P1OUT&=~43;}while(0)
