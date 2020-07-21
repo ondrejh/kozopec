@@ -29,6 +29,10 @@
 #include <msp430g2231.h>
 
 #include <stdint.h>
+#include <stdbool.h>
+
+#define BTN_PUSH 100
+#define BTN_HOLD 1000
 
 // on-board leds
 #define LED_INIT() do{P1DIR|=0x41;P1OUT&=~0x41;}while(0)
@@ -106,6 +110,14 @@ int main(void)
 
 	board_init(); // init hw
 
+	enum {
+	    MOD_STOP = 0,
+	    MOD_FWD_PUSH,
+	    MOD_FWD_HOLD,
+	    MOD_BWD_PUSH,
+	    MOD_BWD_HOLD,
+	} mode = MOD_STOP;
+
 	while(1) // main loop
 	{
 	    // motor step control
@@ -114,6 +126,8 @@ int main(void)
 	    static int16_t mv = 0; // step speed, if 0 stop
 	    static int16_t ma = 0;
 	    static int16_t max_speed = 200;
+	    bool fwd_push = false, bwd_push = false;
+	    static bool fwd_hold = false, bwd_hold = false, rel_hold = false;
         if ((TAR - mt) > STEP_DIV) {
             if (mv!=0) {
                 mt += STEP_DIV;
@@ -144,45 +158,105 @@ int main(void)
                 ADC10CTL0 |= ENC + ADC10SC;
             }
             adc_cnt++;
+
+    	    static uint16_t btn_fwd = 0, btn_bwd = 0, btn_rel = 0;
+	        static bool fwd_stat = false, bwd_stat = false;
+
+	        // button filtering
+            if (FORWARD) {
+                if (btn_fwd < BTN_HOLD) {
+                    btn_fwd ++;
+                    if (btn_fwd >= BTN_PUSH)
+                        fwd_stat = true;
+                } else
+                    fwd_hold = true;
+            } else {
+                if (btn_fwd > BTN_PUSH) {
+                    btn_fwd = BTN_PUSH;
+                    if (fwd_stat == true)
+                        fwd_push = true;
+                } else if (btn_fwd > 0)
+                    btn_fwd --;
+                else {
+                    fwd_stat = false;
+                    fwd_hold = false;
+                }
+            }
+
+            if (BACKWARD) {
+                if (btn_bwd < BTN_HOLD) {
+                    btn_bwd ++;
+                    if (btn_bwd >= BTN_PUSH)
+                        bwd_stat = true;
+                } else
+                    bwd_hold = true;
+            } else {
+                if (btn_bwd > BTN_PUSH) {
+                    btn_bwd = BTN_PUSH;
+                    if (bwd_stat == true)
+                        bwd_push = true;
+                } else if (btn_bwd > 0)
+                    btn_bwd --;
+                else {
+                    bwd_stat = false;
+                    bwd_hold = false;
+                }
+            }
+
+            if (RELEASE) {
+                if (btn_rel < BTN_PUSH)
+                    btn_rel ++;
+                else
+                    rel_hold = true;
+            } else {
+                if (btn_rel > 0)
+                    btn_rel --;
+                else
+                    rel_hold = false;
+            }
 	    }
 
 	    // system sequential
         static int seqv = 0;
         switch (seqv) {
         case 0: // wait button
-            if (FORWARD) {
-                MOTOR_DIR(1);
-                MOTOR_ENABLE();
-                mv = 0;
-                ma = STEP_ACC;
-                seqv++;
-            }
-            else if (BACKWARD) {
-                MOTOR_DIR(0);
+            mode = MOD_STOP;
+            if (fwd_push)
+                mode = MOD_FWD_PUSH;
+            if (bwd_push)
+                mode = MOD_BWD_PUSH;
+            if (fwd_hold)
+                mode = MOD_FWD_HOLD;
+            if (bwd_hold)
+                mode = MOD_BWD_HOLD;
+
+            if (mode != MOD_STOP) {
+                if ((mode == MOD_FWD_PUSH) || (mode == MOD_FWD_HOLD))
+                    MOTOR_DIR(1);
+                else
+                    MOTOR_DIR(0);
                 MOTOR_ENABLE();
                 mv = 0;
                 ma = STEP_ACC;
                 seqv++;
             }
             else {
-                if (RELEASE)
+                if (rel_hold)
                     MOTOR_DISABLE();
                 else
                     MOTOR_ENABLE();
             }
             break;
-        case 1: // acceleration (wait button release)
-            if ((DIR_FORW && (!FORWARD)) || (DIR_BACK && (!BACKWARD))) {
+        case 1: // acceleration, wait stop event (depends on mode)
+            if ((((mode == MOD_FWD_PUSH) || (mode == MOD_BWD_PUSH)) && (fwd_push || bwd_push))
+                || ((mode == MOD_FWD_HOLD) && (!fwd_hold))
+                || ((mode == MOD_BWD_HOLD) && (!bwd_hold))) {
                 ma = -STEP_ACC;
                 seqv++;
             }
             break;
-        case 2: // deceleration (wait button)
-            if ((DIR_FORW &&  FORWARD) || (DIR_BACK && BACKWARD)) {
-                ma = STEP_ACC;
-                seqv--;
-            }
-            else if (mv <= 0) {
+        case 2: // deceleration
+            if (mv <= 0) {
                 mv = 0;
                 ma = 0;
                 seqv = 0;
