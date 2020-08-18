@@ -14,5 +14,5 @@ Insert image here ..
 Insert image here ..
 
 TODO:
-1) vytipovat a objednat součástky: MCU, potenciometr, stabilizátor
-2) nakreslit plošňák
+1) vyzkouset
+2) doplnit dokumentaci
